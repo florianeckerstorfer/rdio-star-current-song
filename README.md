@@ -12,14 +12,8 @@ Installation
 ------------
 
 1. You need [Node.js](http://nodejs.org)
-2. Clone this repository
-```shell
-$ git clone https://github.com/florianeckerstorfer/rdio-star-current-song
-```
-3. Clone the `rdio-simple` library into `rdio-simple/` (sorry, the library doesn't exist on NPM):
-```shell
-$ git clone https://github.com/rdio/rdio-simple rdio-simple
-```
+2. Clone this repository: `git clone https://github.com/florianeckerstorfer/rdio-star-current-song`
+3. Clone the `rdio-simple` library into `rdio-simple/` (sorry, the library doesn't exist on NPM): `git clone https://github.com/rdio/rdio-simple rdio-simple`
 4. Create a [Rdio developer account](http://rdio.mashery.com)
 5. Copy `config.js.dist` to `config.js`
 6. Insert you consumer key and token into `config.js`

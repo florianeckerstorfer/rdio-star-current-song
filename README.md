@@ -33,7 +33,7 @@ $ git clone https://github.com/rdio/rdio-simple rdio-simple
 
 ### Alfred
 
-1. Download the workflow
+1. Download the workflow: [rdio-star-current-song.alfredworkflow](https://github.com/florianeckerstorfer/rdio-star-current-song/releases/download/v0.1/rdio-star-current-song.alfredworkflow)
 2. Open the workflow in Alfred
 3. Add a keyboard shortcut
 4. Double-click on the *Run Script* action and change the path to Node.js and the script

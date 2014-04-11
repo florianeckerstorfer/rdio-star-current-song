@@ -1,3 +1,13 @@
+// rdio-star-current-song
+// ======================
+//
+// Add the currently playing song to a Starred playlist in Rdio.
+//
+// (c) 2014 Florian Eckerstorfer <florian@eckerstorfer.co>
+//
+// The MIT License
+//
+
 var rl = require("readline"),
     fs = require('fs'),
     Rdio = require(__dirname+"/rdio-simple/node/rdio"),
@@ -10,9 +20,44 @@ function done() {
     process.stdin.destroy();
 }
 
-function addToPlaylist(rdio) {
-    // Get a list of playlists.
-    rdio.call("getPlaylists", {}, function (err, data) {
+// RdioStarCurrentSong
+function RdioStarCurrentSong(rdio, starredPlaylistName) {
+    this.rdio = rdio;
+    this.starredPlaylistName = starredPlaylistName;
+}
+
+// Retrieves a value of the currently playing track from Rdio (using AppleScript) and calls `fn` with that value.
+RdioStarCurrentSong.prototype.getCurrentTrackValue = function getCurrentTrackValue(name, fn) {
+    var cmd = 'osascript -e \'tell application \"Rdio\" to get the ' + name + ' of the current track\'';
+    require('child_process').exec(cmd, function (err, stdout, stderr) {
+        if (err) {
+            console.log("ERROR: " + err);
+            done();
+            return;
+        };
+
+        fn(stdout.trim());
+    });
+}
+
+// Retrieves the key and name of the currently playing track and calls `fn` with a track object.
+RdioStarCurrentSong.prototype.getCurrentTrack = function getCurrentTrack(fn) {
+    var that = this;
+    that.getCurrentTrackValue('key', function (key) {
+        var track = { key: key, name: null };
+
+        that.getCurrentTrackValue('name', function (name) {
+            track.name = name;
+
+            fn(track);
+        });
+    });
+}
+
+// Retrieves the list of playlists from Rdio and calls `fn` with the playlist as first and only argument.
+RdioStarCurrentSong.prototype.getStarredPlaylist = function getStarredPlaylist(fn) {
+    var that = this;
+    this.rdio.call("getPlaylists", {}, function (err, data) {
         if (err) {
             console.log("ERROR: " + err);
             done();
@@ -22,45 +67,37 @@ function addToPlaylist(rdio) {
         var playlists = data.result.owned;
 
         playlists.forEach(function (playlist) {
-            if (config.STARRED_PLAYLIST_NAME == playlist.name) {
+            if (that.starredPlaylistName == playlist.name) {
                 starredPlaylist = playlist;
             };
         });
 
-        var cmd = 'osascript -e \'tell application \"Rdio\" to get the key of the current track\'';
-        require('child_process').exec(cmd, function (err, stdout, stderr) {
-            if (err) {
-                console.log("ERROR: " + err);
-                done();
-                return;
-            };
-            var track = { key: stdout.trim(), name: null };
+        fn(starredPlaylist);
+    });
+}
 
-            var cmd = 'osascript -e \'tell application \"Rdio\" to get the name of the current track\'';
-            require('child_process').exec(cmd, function (err, stdout, stderr) {
+// Adds the currently playing song to the Starred playlist.
+RdioStarCurrentSong.prototype.addToPlaylist = function addToPlaylist() {
+    // Get a list of playlists.
+    var that = this;
+    this.getStarredPlaylist(function (playlist) {
+        that.getCurrentTrack(function (track) {
+            var options = {
+                playlist: starredPlaylist.key,
+                tracks: [ track.key ]
+            };
+
+            that.rdio.call("addToPlaylist", options, function (err, data) {
                 if (err) {
                     console.log("ERROR: " + err);
                     done();
                     return;
-                };
-                track.name = stdout.trim();
-                var options = {
-                    playlist: starredPlaylist.key,
-                    tracks: [ track.key ]
-                };
+                }
+                console.log("Added track " + track.name + " to " + starredPlaylist.name + ".");
 
-                rdio.call("addToPlaylist", options, function (err, data) {
-                    if (err) {
-                        console.log("ERROR: " + err);
-                        done();
-                        return;
-                    }
-                    console.log("Added track " + track.name + " to " + starredPlaylist.name + ".");
-                });
+                done();
             });
         });
-
-        done();
     });
 }
 
@@ -72,6 +109,7 @@ fs.readFile(__dirname+"/.user_config.json", function (err, data) {
         var token = JSON.parse(data);
         var rdio = new Rdio([config.RDIO_CONSUMER_KEY, config.RDIO_CONSUMER_SECRET], token);
     }
+    var rdioStarCurrentSong = new RdioStarCurrentSong(rdio, config.STARRED_PLAYLIST_NAME);
 
     // Authenticate against the Rdio service.
     if (null === token) {
@@ -100,11 +138,11 @@ fs.readFile(__dirname+"/.user_config.json", function (err, data) {
                         return;
                     }
 
-                    addToPlaylist(rdio);
+                    rdioStarCurrentSong.addToPlaylist();
                 });
             });
         });
     } else {
-        addToPlaylist(rdio);
+        rdioStarCurrentSong.addToPlaylist();
     }
 });

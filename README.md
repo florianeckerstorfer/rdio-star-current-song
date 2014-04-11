@@ -46,7 +46,11 @@ Installation
 Changelog
 ---------
 
-### Version 0.0.1 (10 April 2014)
+### Version 0.1.1 (11 April 2014)
+
+- Refactoring
+
+### Version 0.1 (10 April 2014)
 
 - Intial release
 
